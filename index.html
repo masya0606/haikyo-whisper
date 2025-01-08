@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ランダム表示 & 自動サイズ調整</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      position: relative;
+    }
+    #textInput {
+      position: fixed;
+      bottom: 10%;
+      width: 80%;
+      max-width: 600px;
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      outline: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .message {
+      position: absolute;
+      font-weight: bold;
+      white-space: nowrap;
+      opacity: 1;
+      animation: fadeOut 5s forwards;
+    }
+    .local-message {
+      color: blue; /* 本人の画面では青色 */
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <input id="textInput" type="text" placeholder="ぼやく" autocomplete="off" />
+
+  <script>
+    const textInput = document.getElementById('textInput');
+    let messages = [];
+
+    textInput.addEventListener('compositionstart', () => {
+      textInput.dataset.composing = "true";
+    });
+
+    textInput.addEventListener('compositionend', () => {
+      textInput.dataset.composing = "false";
+    });
+
+    textInput.addEventListener('keydown', (event) => {
+      // 漢字変換中のエンターを無視
+      if (event.key === "Enter" && textInput.dataset.composing !== "true") {
+        event.preventDefault(); // デフォルトのエンターキー動作を無効化
+
+        // 入力されたテキストを取得
+        const inputText = textInput.value.trim();
+        if (inputText) {
+          // 新しいメッセージを作成
+          createMessage(inputText, true); // 自分のメッセージとして作成
+
+          // 入力ボックスをクリア
+          textInput.value = "";
+        }
+      }
+    });
+
+    function createMessage(text, isLocal = false) {
+      const message = document.createElement('div');
+      message.className = 'message';
+      if (isLocal) {
+        message.classList.add('local-message'); // 青色を適用
+      }
+      message.textContent = text;
+
+      // ランダムな位置を設定
+      const randomX = Math.random() * window.innerWidth * 0.8; // 画面幅の80%範囲内
+      const randomY = Math.random() * window.innerHeight * 0.8; // 画面高さの80%範囲内
+      message.style.left = `${randomX}px`;
+      message.style.top = `${randomY}px`;
+
+      // サイズ調整用にメッセージを保存
+      messages.push(message);
+      document.body.appendChild(message);
+
+      // 5秒後に削除
+      setTimeout(() => {
+        message.remove();
+        messages = messages.filter(m => m !== message);
+        adjustFontSize(); // 削除後もサイズを再調整
+      }, 5000);
+
+      // 文字サイズを調整
+      adjustFontSize();
+    }
+
+    function adjustFontSize() {
+      // メッセージが無い場合は調整不要
+      if (messages.length === 0) return;
+
+      // 表示されているすべてのメッセージを基にサイズを調整
+      const maxFontSize = 32; // 最大文字サイズ
+      const minFontSize = 12; // 最小文字サイズ
+      const maxMessages = Math.max(messages.length, 1);
+      const newFontSize = Math.max(minFontSize, Math.min(maxFontSize, window.innerHeight / maxMessages / 2));
+
+      messages.forEach(message => {
+        message.style.fontSize = `${newFontSize}px`;
+      });
+    }
+  </script>
+</body>
+</html>
